@@ -5,17 +5,34 @@ import copy
 
 class World():
 
-    def __init__(self, filename = None, definedWorlds=None):
+    def __init__(self, filename = None, definedWorlds=None,r=-0.04,g=1,e=0):
         self.__world = []
-        self.__startPosition=0
+        self.__policy=[]
+        self.__startPosition=[]
         self.__testArray=[bool,bool,0,0,0,0,0,0,0]  # W,S,P,R,G,E,T,B,F
         self.__p1,self.__p2,self.__p3 = 0.0,0.0,0.0
-        self.__r=1
-        self.__G=1
-        self.__E=1
+        self.__r=r
+        self.__G=g
+        self.__E=e
+        self.__directions=('^','>','v','<')    
         if filename != None:
             self.__loadWorldFromFile(filename)
-
+        # self.showParams()
+        print("------------------")
+        print(len(self.__world))
+        print(len(self.__world[0]))
+        print(len(self.__world[0][3]))
+        print("------------------")
+    def getR(self):
+        return self.__r
+    def getG(self):
+        return self.__G
+    def getE(self):
+        return self.__E
+    def getStart(self):
+        return self.__startPosition
+    def getP(self):
+        return self.__p1,self.__p2,self.__p3
     def __loadWorldFromFile(self,filename):
         file=open(filename,'r')
         lines=list(file.readlines())
@@ -32,6 +49,7 @@ class World():
             elif label=='S':
                 param=[int(i) for  i in newline.split(' ')]
                 self.__setField((param[0]-1),(param[1]-1),'S')
+                self.__startPosition=[param[0]-1,param[1]-1]
             elif label=='P':
                 param=[float(i) for  i in newline.split(' ')]
                 self.__p1,self.__p2,self.__p3 = param[0],param[1],param[2]
@@ -57,18 +75,57 @@ class World():
             else:
                 a=1
         self.showMap()
+    def showParams(self):
+        print([self.__sizeX, self.__sizeY])
+        print(self.__p1)
+        print(self.__p2)
+        print(self.__p3)
+        print(self.__r)
+        print(self.__G)
     def __initWorld(self, x,y):
         xlist=[]
+        xplist=[]
         for i in range(0,x):
-            xlist.append(['N',0])
+            xlist.append(['N',0, self.__r])
+            xplist.append([])
         for i in range(0,y):
             self.__world.append(copy.deepcopy(xlist))
+            self.__policy.append(xplist)
+    def __inittmpW(self, x,y):
+        xlist=[]
+        tmpWorld=[]
+        for i in range(0,x):
+            xlist.append([])
+        for i in range(0,y):
+            return tmpWorld.append(copy.deepcopy(xlist))
     def __setField(self,x,y,param=None, val=None):
-        print(x,y)
+        # print(x,y)
         if param!=None:
             self.__world[y][x][0]=param
-    
-    
+        if (param=='B' or param=='T') and val!=None:
+            self.__world[y][x][2]=val
+        if param=='T':
+            self.__world[y][x][1]=val
+    def __up(self):
+        return self.__directions[0]
+    def __right(self):
+        return self.__directions[1]
+    def __down(self):
+        return self.__directions[2]
+    def __left(self):
+        return self.__directions[3]
+#self.__directionsself.__directions=('^','>','v','<') 
+    def ifBump(self, start, direction):
+        # print(direction)
+        if direction == self.__up():
+            return start[0]>=self.__sizeY or self.__world[start[0]+1][start[1]][0]=='F'
+        if direction == self.__left():
+            return start[1]<=0 or self.__world[start[0]][start[1]-1][0]=='F'
+        if direction == self.__down():
+            return start[0]<=0 or self.__world[start[0]-1][start[1]][0]=='F'
+        if direction == self.__right():
+            return start[1]>=self.__sizeX or self.__world[start[0]][start[1]+1][0]=='F'
+
     def GetstartPosition(self): 
         return 1,1
     def loadExampleWorld(self,choice=1):
@@ -96,28 +153,142 @@ class World():
                             [['N',0],['F','-'], 0,['T',1]],
                             [['S','+']    , 0       , 0,['N',0]]]
     def loadWorldFromFile(self):
-        print(len(self.__testArray))
+        # print(len(self.__testArray))
         self.__world=np.zeros((self.__sizeY,self.__sizeX))
-        for x in range(0,4):
-            for y in range(0,3):
+        for x in range(0,self.__sizeX):
+            for y in range(0,self.__sizeY):
                 self.__world[y][x][1]=random.randint(0,50)+x+y
         return
     
     def showMap(self):
         for i in range(len(self.__world)-1,-1,-1):
             print(self.__world[i])
-        # print(self.__world[1][1])
+    def getPrice(self,start, direction=None):
+        if direction == self.__up():
+           return self.__world[start[0]+1][start[1]][2]
+        if direction == self.__left():
+            return self.__world[start[0]][start[1]-1][2]
+        if direction == self.__down():
+            return self.__world[start[0]-1][start[1]][2]
+        if direction == self.__right():
+            return self.__world[start[0]][start[1]+1][2]
+        if direction ==None:
+            return self.__world[start[0]][start[1]][2]
+    def getVal(self,start, direction=None):
+        
+        if direction == self.__up():
+        #    print(self.__world[start[0]+1][start[1]][1])
+           return self.__world[start[0]+1][start[1]][1]
+        if direction == self.__left():
+            return self.__world[start[0]][start[1]-1][1]
+        if direction == self.__down():
+            return self.__world[start[0]-1][start[1]][1]
+        if direction == self.__right():
+            return self.__world[start[0]][start[1]+1][1]
+        if direction ==None:
+            return self.__world[start[0]][start[1]][1]
+    def __returnDirect(self,directLetter):
+        # print()
+        # print(d)
+        if len(directLetter)>1 or not isinstance(directLetter,str):
+            print("wartosci nie ma w zbiorze '^','>','v','<' ")
+            sys.exit(1)
+        # print(directLetter)
+        # print(type(directLetter))
+        ind = self.__directions.index(directLetter)
+        if ind == 0:
+            left = 3
+        else: 
+            left=ind-1
+        if ind == 3:
+            right = 0
+        else:
+            right = ind+1
+        return (ind, left, right, (ind+2)%4)
+    
+    def proceedMDP(self):
+        tmpList=[]
+        tmpWorld=copy.deepcopy(self.__world)
+        p=[self.__p1,self.__p2,self.__p3,1-self.__p1-self.__p2-self.__p3]
+        for x in range(0, self.__sizeX+1):
+            for y in range(0,self.__sizeY+1):
+                tmpList.clear()
+                # print([x,y])
+                for i in self.__directions:
+                    dir = self.__returnDirect(i)
+                    # print(dir)
+                    if self.__world[y][x][0]!='T' and self.__world[y][x][0]!='F':
+                        # print(self.__world[y][x][0])
+                        # print(self.__world[y][x][0]!='T')
+                        # print(type(self.__world[y][x][0]))
+                        # print()
+                        val=0
+                        if x==2 and y==1:
+                            print(1)
+                        for j in range(0, len(dir)):
+                            # print(self.__directions[dir[j]])
+                            if self.ifBump([y,x],self.__directions[dir[j]]):
+                                val += p[j]*self.getVal([y,x])
 
-    # def 
+                                # print('odbicie')
+                                # print([x,y])
+                            else:
+                                val+=p[j]*self.getVal([y,x],direction=self.__directions[dir[j]])
+                                
 
-
+                        tmpList.append((self.__G*val,i))
+                print(tmpList)   
+                if self.__world[y][x][0]!='T' and self.__world[y][x][0]!='F':
+                    print(tmpList,max(tmpList,key=lambda item:item[0]))
+                    
+                    tmpWorld[y][x][1]=max(tmpList,key=lambda item:item[0])[0]+self.getPrice([y,x])
+                    self.__policy[y][x]=max(tmpList,key=lambda item:item[0])[1]
+        for x in range(0, self.__sizeX+1):
+            for y in range(0,self.__sizeY+1):
+                if self.__world[y][x][0]!='T' and tmpWorld[y][x][0]!='F':
+                    if abs(self.__world[y][x][1]-tmpWorld[y][x][1])>0.0001:
+                        #
+                        break
+                    else:
+                        self.__world=copy.deepcopy(tmpWorld)
+                        return False
+                else:
+                    break
+        self.__world=copy.deepcopy(tmpWorld)
+        return True
+    def showPolicy(self):
+        for y in range(self.__sizeY,-1,-1):    
+            print(self.__policy[y])
 #####################################################################################
 #######################     TEST
 #####################################################################################
-
-
+    def writeWorldToFile(self):
+        for y in range(0,self.__sizeY):
+            for x in range (0,self.__sizeX):
+                a=1
 print(sys.argv)
 print()
 w=World(filename='./worlds/w4x3-0.data')
+counter=0
+while    w.proceedMDP():
+    print(1)
+    counter+=1
+
+
+
+print(counter)
+# w.proceedMDP()
+# w.showMap()
+# print()
+# print()
+# w.proceedMDP()
+# w.showMap()
+# # print()
+# # print()
+# # w.proceedMDP()
+w.showMap()
+print()
+print()
+w.showPolicy()
 # w.loadExampleWorld()
 # w.showMap()
