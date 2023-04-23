@@ -1,11 +1,12 @@
-import numpy as np
-import random
-import sys
-import copy
-
+import numpy  as np 
+import random                        
+import sys                        
+import copy                    
+import argparse            
+# from agent import Agent   
 class World():
 
-    def __init__(self, filename = None, definedWorlds=None,r=-0.04,g=1,e=0):
+    def __init__(self, filename = None, definedWorlds=None,r=-0.04,g=0.99,e=0):
         self.__world = []
         self.__policy=[]
         self.__startPosition=[]
@@ -14,21 +15,26 @@ class World():
         self.__r=r
         self.__G=g
         self.__E=e
-        self.__directions=('^','>','v','<')    
+        self.__directions=('^','>','v','<')   
         if filename != None:
             self.__loadWorldFromFile(filename)
         # self.showParams()
-        print("------------------")
-        print(len(self.__world))
-        print(len(self.__world[0]))
-        print(len(self.__world[0][3]))
-        print("------------------")
+        # self.__agent=Agent(x=self.__sizeX, y=self.__sizeY, start=  self.GetstartPosition()) 
+        # print("------------------")
+        # self.showParams()
+        # print("------------------")
     def getR(self):
         return self.__r
+    def setR(self,r):
+        self.__r=r
     def getG(self):
         return self.__G
+    def setG(self,g):
+        self.__G=g
     def getE(self):
         return self.__E
+    def setE(self,e):
+        self.__E=e
     def getStart(self):
         return self.__startPosition
     def getP(self):
@@ -44,7 +50,7 @@ class World():
                 param=[int(i) for  i in newline.split(' ')]
                 self.__sizeX=param[0]-1
                 self.__sizeY=param[1]-1
-                print(param)
+                # print(param)
                 self.__initWorld(param[0],param[1])
             elif label=='S':
                 param=[int(i) for  i in newline.split(' ')]
@@ -74,7 +80,7 @@ class World():
 
             else:
                 a=1
-        self.showMap()
+        # self.showMap()
     def showParams(self):
         print([self.__sizeX, self.__sizeY])
         print(self.__p1)
@@ -212,7 +218,8 @@ class World():
             right = ind+1
         return (ind, left, right, (ind+2)%4)
     
-    def proceedMDP(self):
+    def proceedMDP(self,file1,ct):
+        
         tmpList=[]
         tmpWorld=copy.deepcopy(self.__world)
         p=[self.__p1,self.__p2,self.__p3,1-self.__p1-self.__p2-self.__p3]
@@ -240,7 +247,7 @@ class World():
                     # self.__policy[y][x]=max(tmpList,key=lambda item:item[0])
         for x in range(0, self.__sizeX+1):
             for y in range(0,self.__sizeY+1):
-                if self.__world[y][x][0]!='T' and tmpWorld[y][x][0]!='F':
+                if self.__world[y][x][0]!='T' and self.__world[y][x][0]!='F':
                     if abs(self.__world[y][x][1]-tmpWorld[y][x][1])>0.0001:
                         #
                         break
@@ -250,14 +257,39 @@ class World():
                 else:
                     break
         self.__world=copy.deepcopy(tmpWorld)
+        self.saveToFile(file1,ct)
         return True
+    
+    def saveToFile(self,file1,ct, comm='None'):
+        if comm!='None':
+            s='lp'+' '
+            for y in range(0, self.__sizeY+1):
+                # s.clear()
+                for x in range(0,self.__sizeX+1):
+                    if self.__world[y][x][0]!='T' and self.__world[y][x][0]!='F':
+                        s+='('+str(y)+','+str(x)+')'+' '
+                        
+            s+='\n'
+            file1.write(s)
+            # print(s)
+        else:
+            s=str(ct)+' '
+            for y in range(0, self.__sizeY+1):
+                # s.clear()
+                for x in range(0,self.__sizeX+1):
+                    if self.__world[y][x][0]!='T' and self.__world[y][x][0]!='F':
+                        s+=format(self.__world[y][x][1],'.4f')+' '
+                        # print(1)
+            s+='\n'
+            # print()
+            file1.write(s)
     def showPolicy(self):
         for x in range(0,self.__sizeX+1):
             for y in range(0,self.__sizeY+1):
                 if  (self.__world[y][x][0]!='F' and self.__world[y][x][0]!='T'):    
                    self.__policy[y][x]=self.getBestPolicy([y,x])
                 else:
-                    self.__policy[y][x]=' '
+                    self.__policy[y][x]=self.__world[y][x][0]
         for y in range(self.__sizeY,-1,-1 ):                
                     print(self.__policy[y])
 #####################################################################################
@@ -291,36 +323,60 @@ class World():
             for x in range(0,self.__sizeX+1):
                 if  (self.__world[y][x][0]!='F' and self.__world[y][x][0]!='T'):
                     print(format( self.__world[y][x][1],'.4f'), end=' ')
+                elif self.__world[y][x][0]=='T':
+                    print('', self.__world[y][x][0], self.__world[y][x][1],end=' ')
                 else:
                     print('  ', self.__world[y][x][0],' ',end=' ')
             print(']')
-    def writeWorldToFile(self):
-        for y in range(0,self.__sizeY):
-            for x in range (0,self.__sizeX):
-                a=1
-print(sys.argv)
-print()
-w=World(filename='./worlds/w4x3-0.data')
-counter=0
-while    w.proceedMDP():
-    # print(1)
-    counter+=1
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Rozwiązuje MDP metodą iteracji wartości')
+    parser.add_argument('-g', '--gamma', help="parametr dyskontowy", required=False)
+    parser.add_argument('-e', '--epsilon', help="parametr nauki", required=False)
+    parser.add_argument('-f','--filename', help="przyjmuje nazwę pliku",required=False)
+    args = parser.parse_args()
+    if (args.gamma!=None and args.epsilon==None) or (args.gamma==None and args.epsilon!=None): 
+        print("Blednie podano argumenty: -g wartosc1 -e wartosc2")
+        sys.exit()
+    if args.filename!=None:
+        print("Podana nazwa pliku: ", args.filename)
+        filename=str(args.filename)
+    else:
+        filename='worlds/world.data'
+    
+    file1 = open('results.data', 'w')
+    w=World(filename)
+    if (args.gamma!=None and args.epsilon!=None):
+        if args.gamma>1 or args.gamma<0:
+            print("zla wartosc -g [0,1]")
+            sys.exit()
+        w.setG(args.gamma)
+        if args.epsilon>1 or args.epsilon<0:
+            print("zla wartosc -e [0,1]")
+            sys.exit()
+        w.setG(args.gamma)
+        w.setE(args.epsilon)
+    w.saveToFile(file1,comm='#',ct=1)
+    w.saveToFile(file1,ct=0)
+    counter=0
+
+    w=World(filename=filename)
+    file1 = open('results.data', 'w')
+    w.saveToFile(file1,comm='#',ct=1)
+    w.saveToFile(file1,ct=0)
+    counter=0
+    while    w.proceedMDP(file1,counter):
+        #print(1)
+        counter+=1
 
 
 
-# print(counter)
-# w.proceedMDP()
-# w.showMap()
-# print()
-# print()
-# w.proceedMDP()
-# w.showMap()
-# # print()
-# # print()
-# # w.proceedMDP()
-w.showUt()
-print()
-print()
-w.showPolicy()
-# w.loadExampleWorld()
-# w.showMap()
+    print(counter)
+    w.showUt()
+    print()
+    print()
+    w.showPolicy()
+
+if __name__ == '__main__':
+    main()  # next section explains the use of sys.exit
