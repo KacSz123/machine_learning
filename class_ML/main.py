@@ -18,12 +18,12 @@ import numpy as np
 def load_file(filename, headNames=None):
     return pd.read_csv(filename, sep='\t',names=headNames)
 ##### upload data from file
-# data=load_file("./data/brexit/TextBrexit2_text.txt", headNames=["classificator", "text"]) #
+# data=load_file("./data/brexit/TextBrexit2_text.txt", headNames=["classifier", "text"]) #
 def NaiveBayesBoWCross(filename="./data/brexit/TextBrexit2_text.txt", save=None):
-    cross_data = load_file(filename, headNames=["classificator", "text"]) 
+    cross_data = load_file(filename, headNames=["classifier", "text"]) 
 
     split = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=42)
-    for train_index, test_index in split.split(cross_data, cross_data["classificator"]):
+    for train_index, test_index in split.split(cross_data, cross_data["classifier"]):
         data = cross_data.loc[train_index]
         test = cross_data.loc[test_index]
     ##### BoW
@@ -42,29 +42,29 @@ def NaiveBayesBoWCross(filename="./data/brexit/TextBrexit2_text.txt", save=None)
     # print(X_text_tfidf.shape)
 
     ####### naive bayes
-    clf = MultinomialNB().fit(X_text_tfidf, data.classificator)
+    clf = MultinomialNB().fit(X_text_tfidf, data.classifier)
     docs_new = test.text
     X_new_counts = count_vect.transform(docs_new)
     X_new_tfidf = tfidf_transformer.transform(X_new_counts)
 
     predicted = clf.predict(X_new_tfidf)
     print()
-    print(np.mean(predicted==test.classificator))
+    print(np.mean(predicted==test.classifier))
     print()
     # print(predicted)
     ''''''
-    print(metrics.classification_report(test.classificator, predicted))
+    print(metrics.classification_report(test.classifier, predicted))
     if save!=None:
         pickle.dump(clf, open("naive_bayes_model.sav",'wb'))
     #################################################################################################<
     #################################################################################################<
     #################################################################################################<
-def NaiveBayesBoWTrain( train_file="./data/brexit/TextBrexit2_text.txt", test_file = None, _headNames=["classificator", "text"]):
+def NaiveBayesBoWTrain( train_file="./data/brexit/TextBrexit2_text.txt", test_file = None, _headNames=["classifier", "text"]):
     
     if test_file==None:
         cross_data = load_file(train_file, headNames=_headNames) 
         split = StratifiedShuffleSplit(n_splits=1, test_size=0.3, random_state=42)
-        for train_index, test_index in split.split(cross_data, cross_data["classificator"]):
+        for train_index, test_index in split.split(cross_data, cross_data["classifier"]):
             data = cross_data.loc[train_index]
             test = cross_data.loc[test_index]
     else:
@@ -85,18 +85,18 @@ def NaiveBayesBoWTrain( train_file="./data/brexit/TextBrexit2_text.txt", test_fi
     # print(X_text_tfidf.shape)
 
     ####### naive bayes
-    clf = MultinomialNB().fit(X_text_counts, data.classificator)
+    clf = MultinomialNB().fit(X_text_counts, data.classifier)
     docs_new = test.text
     X_new_counts = count_vect.transform(docs_new)
     X_new_tfidf = tfidf_transformer.transform(X_new_counts)
 
     predicted = clf.predict(X_new_tfidf)
     print()
-    print(np.mean(predicted==test.classificator))
+    print(np.mean(predicted==test.classifier))
     print()
     # print(predicted)
     ''''''
-    print(metrics.classification_report(test.classificator, predicted,target_names=['against','neutral', 'for']))
+    print(metrics.classification_report(test.classifier, predicted,target_names=['against','neutral', 'for']))
     ''''''''''''''''''''
 
 
@@ -117,7 +117,7 @@ NaiveBayesBoWCross()
 
 
 # ##### naive bayes
-# clf1 = MultinomialNB().fit(X_train_tfidf, strat_train_set.classificator)
+# clf1 = MultinomialNB().fit(X_train_tfidf, strat_train_set.classifier)
 # docs_test = strat_test_set.text
 # docs_test = ['brexit', 'referendum', 'britains']
 # X_test_counts = count_vect.transform(docs_test)
